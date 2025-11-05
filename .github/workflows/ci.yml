@@ -35,28 +35,11 @@ jobs:
 
       - name: Lint backend
         working-directory: server
-        run: |
-          cd client
-          npx eslint -f json . > /tmp/eslint-client.json || true
-          ERR_COUNT=$(node -e "try{const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/eslint-client.json')); console.log(j.reduce((s,f)=>s+(f.errorCount||0),0));}catch(e){console.log(0)}")
-          echo "ESLint frontend errors: $ERR_COUNT"
-          if [ "$ERR_COUNT" -gt 5 ]; then
-            echo "Too many ESLint errors (>5). Failing."
-            cat /tmp/eslint-client.json
-            exit 1
-          fi
+        run: npm run lint
+
       - name: Lint frontend
         working-directory: client
-        run: |
-          cd client
-          npx eslint -f json . > /tmp/eslint-client.json || true
-          ERR_COUNT=$(node -e "try{const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/eslint-client.json')); console.log(j.reduce((s,f)=>s+(f.errorCount||0),0));}catch(e){console.log(0)}")
-          echo "ESLint frontend errors: $ERR_COUNT"
-          if [ "$ERR_COUNT" -gt 5 ]; then
-            echo "Too many ESLint errors (>5). Failing."
-            cat /tmp/eslint-client.json
-            exit 1
-          fi
+        run: npm run lint
 
   tests-backend:
     name: Tests Backend
