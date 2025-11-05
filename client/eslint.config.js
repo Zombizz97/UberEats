@@ -1,16 +1,13 @@
 import pluginVue from 'eslint-plugin-vue'
-import globals from 'globals'
 
 export default [
   ...pluginVue.configs['flat/recommended'],
   {
     rules: {
+      'vue/multi-word-component-names': ['error', { ignores: ['App', 'index', 'Login', 'Home', '[id]'] }],
     },
     languageOptions: {
-      sourceType: 'module',
-      globals: {
-        ...globals.browser
-      }
+      sourceType: 'module'
     }
   }
 ]
