@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 // @ts-nocheck
 // biome-ignore lint: disable
 // oxlint-disable
@@ -13,8 +13,6 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppFooter: typeof import('./src/components/AppFooter.vue')['default']
     AppHeader: typeof import('./src/components/AppHeader.vue')['default']
-    Ff: typeof import('./src/components/ff.vue')['default']
-    HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     Home: typeof import('./src/components/Home.vue')['default']
     LoginRegister: typeof import('./src/components/LoginRegister.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

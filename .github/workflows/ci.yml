@@ -14,10 +14,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18 and enable npm cache
+      - name: Use Node.js 22 and enable npm cache
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: |
             client/package-lock.json
@@ -60,10 +60,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18 and enable npm cache
+      - name: Use Node.js 22 and enable npm cache
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
@@ -97,10 +97,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18 and enable npm cache
+      - name: Use Node.js 22 and enable npm cache
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
@@ -123,10 +123,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18 and enable npm cache
+      - name: Use Node.js 22 and enable npm cache
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
