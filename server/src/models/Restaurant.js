@@ -1,14 +1,15 @@
 import mongoose from 'mongoose'
 
 const RestaurantSchema = new mongoose.Schema({
-  extId: { type: String, index: true },
+    categories: [String],
+    deliveryFee: Number,
+    eta: String,
+  extId: { index: true, type: String, },
+    featured: Boolean,
+    image: String,
   name: String,
-  categories: [String],
-  image: String,
   rating: Number,
-  deliveryFee: Number,
-  eta: String,
-  featured: Boolean,
 }, { timestamps: true })
 
+// eslint-disable-next-line one-var
 export const Restaurant = mongoose.model('Restaurant', RestaurantSchema)

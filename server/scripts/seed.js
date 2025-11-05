@@ -8,7 +8,7 @@ import { Restaurant } from '../src/models/Restaurant.js'
 import 'dotenv/config'
 
 // eslint-disable-next-line func-style,max-statements,max-lines-per-function
-async function main () {
+export async function main () {
     // eslint-disable-next-line no-undef
   const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/vuetify_project'
   await mongoose.connect(mongoUri)

@@ -1,12 +1,15 @@
 import mongoose from 'mongoose'
 
 const ProductSchema = new mongoose.Schema({
-  restaurant: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant', index: true },
+    description: String,
+    // eslint-disable-next-line sort-keys
   extId: { type: String, index: true },
+    image: String,
   name: String,
-  description: String,
   price: Number,
-  image: String,
+    // eslint-disable-next-line sort-keys
+    restaurant: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant', index: true },
 }, { timestamps: true })
 
+// eslint-disable-next-line one-var
 export const Product = mongoose.model('Product', ProductSchema)
