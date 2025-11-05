@@ -1,7 +1,9 @@
 import { computed, ref } from 'vue'
 import { loginUser, logoutUser, registerUser } from '@/services/api'
 
+// eslint-disable-next-line no-undef
 const tokenRef = ref(localStorage.getItem('token') || '')
+// eslint-disable-next-line no-undef
 const userRef = ref(safeParse(localStorage.getItem('user')))
 const loadingRef = ref(false)
 const errorRef = ref(null)
@@ -18,13 +20,17 @@ function setAuth ({ token, user }) {
   tokenRef.value = token || ''
   userRef.value = user || null
   if (token) {
+    // eslint-disable-next-line no-undef
     localStorage.setItem('token', token)
   } else {
+    // eslint-disable-next-line no-undef
     localStorage.removeItem('token')
   }
   if (user) {
+    // eslint-disable-next-line no-undef
     localStorage.setItem('user', JSON.stringify(user))
   } else {
+    // eslint-disable-next-line no-undef
     localStorage.removeItem('user')
   }
 }

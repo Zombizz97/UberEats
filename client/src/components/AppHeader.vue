@@ -1,32 +1,71 @@
 <template>
-  <v-app-bar color="header" flat>
+  <v-app-bar
+    color="header"
+    flat
+  >
     <v-container class="d-flex align-center">
-      <v-toolbar-title class="font-weight-bold" @click="router.push('/').catch(() => {})">Uber Eats</v-toolbar-title>
+      <v-toolbar-title
+        class="font-weight-bold"
+        @click="router.push('/').catch(() => {})"
+      >
+        Uber Eats
+      </v-toolbar-title>
       <v-spacer />
-      <v-btn color="surface" variant="tonal" @click="handleAuthButtonClick">
+      <v-btn
+        color="surface"
+        variant="tonal"
+        @click="handleAuthButtonClick"
+      >
         {{ isAuthenticated ? 'Déconnexion' : 'Connexion' }}
       </v-btn>
-      <v-btn class="ml-2" color="surface" variant="tonal" @click="showCart = true">
-        <v-icon class="me-1">mdi-cart</v-icon>
+      <v-btn
+        class="ml-2"
+        color="surface"
+        variant="tonal"
+        @click="showCart = true"
+      >
+        <v-icon class="me-1">
+          mdi-cart
+        </v-icon>
         Panier<span v-if="count > 0">&nbsp;({{ count }})</span>
       </v-btn>
     </v-container>
 
-    <v-dialog v-model="showCart" max-width="560">
+    <v-dialog
+      v-model="showCart"
+      max-width="560"
+    >
       <v-card>
         <v-card-title class="d-flex justify-space-between align-center">
           <span>Votre panier</span>
-          <v-btn icon="mdi-close" variant="text" @click="showCart = false" />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="showCart = false"
+          />
         </v-card-title>
         <v-divider />
         <v-card-text>
-          <div v-if="items.length === 0" class="text-medium-emphasis">
+          <div
+            v-if="items.length === 0"
+            class="text-medium-emphasis"
+          >
             Votre panier est vide.
           </div>
-          <v-list v-else lines="two">
-            <v-list-item v-for="it in items" :key="it.productId">
+          <v-list
+            v-else
+            lines="two"
+          >
+            <v-list-item
+              v-for="it in items"
+              :key="it.productId"
+            >
               <template #prepend>
-                <v-avatar v-if="it.image" rounded size="48">
+                <v-avatar
+                  v-if="it.image"
+                  rounded
+                  size="48"
+                >
                   <v-img
                     :alt="it.name"
                     cover
@@ -38,9 +77,22 @@
               <v-list-item-subtitle>{{ formatPrice(it.price) }}</v-list-item-subtitle>
               <template #append>
                 <div class="d-flex align-center">
-                  <v-btn icon="mdi-minus" size="small" variant="text" @click.stop="decrement(it.productId)" />
-                  <span class="mx-2" style="min-width: 2rem; text-align: center">{{ it.quantity }}</span>
-                  <v-btn icon="mdi-plus" size="small" variant="text" @click.stop="increment(it.productId)" />
+                  <v-btn
+                    icon="mdi-minus"
+                    size="small"
+                    variant="text"
+                    @click.stop="decrement(it.productId)"
+                  />
+                  <span
+                    class="mx-2"
+                    style="min-width: 2rem; text-align: center"
+                  >{{ it.quantity }}</span>
+                  <v-btn
+                    icon="mdi-plus"
+                    size="small"
+                    variant="text"
+                    @click.stop="increment(it.productId)"
+                  />
                   <v-btn
                     class="ml-2"
                     color="error"
@@ -56,9 +108,17 @@
         </v-card-text>
         <v-divider />
         <v-card-actions class="d-flex justify-space-between">
-          <div class="text-subtitle-1 font-weight-medium">Total: {{ formatPrice(total) }}</div>
+          <div class="text-subtitle-1 font-weight-medium">
+            Total: {{ formatPrice(total) }}
+          </div>
           <div>
-            <v-btn :disabled="items.length === 0" variant="tonal" @click="showCart = false">Fermer</v-btn>
+            <v-btn
+              :disabled="items.length === 0"
+              variant="tonal"
+              @click="showCart = false"
+            >
+              Fermer
+            </v-btn>
           </div>
         </v-card-actions>
       </v-card>

@@ -6,11 +6,13 @@ async function jsonFetch (url, options = {}) {
     Object.assign(headers, options.headers)
   }
 
+  // eslint-disable-next-line no-undef
   const token = localStorage.getItem('token')
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
 
+  // eslint-disable-next-line no-undef
   const res = await fetch(url, { ...options, headers })
   if (!res.ok) {
     // Tente d'extraire un message JSON sinon fallback texte

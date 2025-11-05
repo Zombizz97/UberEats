@@ -1,12 +1,29 @@
 <template>
-  <v-container class="py-12" max-width="480">
-    <v-card class="pa-6" elevation="2" rounded="lg">
-      <v-tabs v-model="tab" fixed-tabs>
-        <v-tab value="login">Se connecter</v-tab>
-        <v-tab value="signup">S'inscrire</v-tab>
+  <v-container
+    class="py-12"
+    max-width="480"
+  >
+    <v-card
+      class="pa-6"
+      elevation="2"
+      rounded="lg"
+    >
+      <v-tabs
+        v-model="tab"
+        fixed-tabs
+      >
+        <v-tab value="login">
+          Se connecter
+        </v-tab>
+        <v-tab value="signup">
+          S'inscrire
+        </v-tab>
       </v-tabs>
 
-      <v-window v-model="tab" class="mt-4">
+      <v-window
+        v-model="tab"
+        class="mt-4"
+      >
         <v-window-item value="login">
           <v-form @submit.prevent="submitLogin">
             <v-text-field
@@ -27,10 +44,22 @@
               type="password"
               :disabled="loading"
             />
-            <v-btn block color="header" :disabled="!canSubmitLogin || loading" :loading="loading" type="submit">
+            <v-btn
+              block
+              color="header"
+              :disabled="!canSubmitLogin || loading"
+              :loading="loading"
+              type="submit"
+            >
               Connexion
             </v-btn>
-            <v-alert v-if="error" class="mt-3" color="error" density="comfortable" variant="tonal">
+            <v-alert
+              v-if="error"
+              class="mt-3"
+              color="error"
+              density="comfortable"
+              variant="tonal"
+            >
               {{ error }}
             </v-alert>
           </v-form>
@@ -64,10 +93,22 @@
               type="password"
               :disabled="loading"
             />
-            <v-btn block color="header" :disabled="!canSubmitSignup || loading" :loading="loading" type="submit">
+            <v-btn
+              block
+              color="header"
+              :disabled="!canSubmitSignup || loading"
+              :loading="loading"
+              type="submit"
+            >
               Inscription
             </v-btn>
-            <v-alert v-if="error" class="mt-3" color="error" density="comfortable" variant="tonal">
+            <v-alert
+              v-if="error"
+              class="mt-3"
+              color="error"
+              density="comfortable"
+              variant="tonal"
+            >
               {{ error }}
             </v-alert>
           </v-form>

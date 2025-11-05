@@ -159,6 +159,7 @@
       restaurants.value = await getRestaurants()
     } catch (e) {
       error.value = e
+      // eslint-disable-next-line no-undef
       console.error(e)
     } finally {
       loading.value = false
