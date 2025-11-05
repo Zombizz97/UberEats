@@ -1,9 +1,15 @@
 <template>
   <v-container class="py-6">
-
     <!-- Navbar catégories -->
-    <v-sheet class="py-3 px-2 rounded-lg mb-6" color="surface" elevation="1">
-      <v-slide-group v-model="selectedCategory" show-arrows>
+    <v-sheet
+      class="py-3 px-2 rounded-lg mb-6"
+      color="surface"
+      elevation="1"
+    >
+      <v-slide-group
+        v-model="selectedCategory"
+        show-arrows
+      >
         <v-slide-group-item
           v-for="cat in categories"
           :key="cat"
@@ -23,8 +29,14 @@
     </v-sheet>
 
     <!-- Carrousel restaurants mis en avant -->
-    <v-card class="mb-6" color="surface" elevation="1">
-      <v-card-title class="text-h6">Populaires près de chez vous</v-card-title>
+    <v-card
+      class="mb-6"
+      color="surface"
+      elevation="1"
+    >
+      <v-card-title class="text-h6">
+        Populaires près de chez vous
+      </v-card-title>
       <v-card-text>
         <v-carousel
           cycle
@@ -36,16 +48,28 @@
             v-for="r in featuredFiltered"
             :key="r._id"
           >
-            <v-card class="mx-2 cursor-pointer" color="surface" elevation="2" @click="goToRestaurant(r)">
+            <v-card
+              class="mx-2 cursor-pointer"
+              color="surface"
+              elevation="2"
+              @click="goToRestaurant(r)"
+            >
               <v-img
                 :alt="r.name"
                 cover
                 height="180"
                 :src="r.image"
               />
-              <v-card-title class="py-2">{{ r.name }}</v-card-title>
+              <v-card-title class="py-2">
+                {{ r.name }}
+              </v-card-title>
               <v-card-subtitle class="d-flex align-center">
-                <v-icon class="me-1" size="small">mdi-star</v-icon>
+                <v-icon
+                  class="me-1"
+                  size="small"
+                >
+                  mdi-star
+                </v-icon>
                 {{ (r.rating || 0).toFixed(1) }}
                 <span class="mx-2">•</span>
                 {{ r.eta }}
@@ -62,8 +86,13 @@
     </v-card>
 
     <!-- Grille autres restaurants -->
-    <v-card color="surface" elevation="1">
-      <v-card-title class="text-h6">Tous les restaurants</v-card-title>
+    <v-card
+      color="surface"
+      elevation="1"
+    >
+      <v-card-title class="text-h6">
+        Tous les restaurants
+      </v-card-title>
       <v-card-text>
         <v-row>
           <v-col
@@ -74,16 +103,28 @@
             md="4"
             sm="6"
           >
-            <v-card class="h-100 cursor-pointer" color="surface" elevation="2" @click="goToRestaurant(r)">
+            <v-card
+              class="h-100 cursor-pointer"
+              color="surface"
+              elevation="2"
+              @click="goToRestaurant(r)"
+            >
               <v-img
                 :alt="r.name"
                 cover
                 height="140"
                 :src="r.image"
               />
-              <v-card-title class="py-2">{{ r.name }}</v-card-title>
+              <v-card-title class="py-2">
+                {{ r.name }}
+              </v-card-title>
               <v-card-subtitle class="d-flex align-center">
-                <v-icon class="me-1" size="small">mdi-star</v-icon>
+                <v-icon
+                  class="me-1"
+                  size="small"
+                >
+                  mdi-star
+                </v-icon>
                 {{ (r.rating || 0).toFixed(1) }}
                 <span class="mx-2">•</span>
                 {{ r.eta }}
@@ -98,7 +139,6 @@
         </v-row>
       </v-card-text>
     </v-card>
-
   </v-container>
 </template>
 

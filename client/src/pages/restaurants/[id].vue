@@ -1,10 +1,25 @@
 <template>
   <v-container class="py-6">
-    <v-card v-if="restaurant" class="mb-6">
-      <v-img :alt="restaurant.name" cover height="220" :src="restaurant.image" />
-      <v-card-title class="text-h5">{{ restaurant.name }}</v-card-title>
+    <v-card
+      v-if="restaurant"
+      class="mb-6"
+    >
+      <v-img
+        :alt="restaurant.name"
+        cover
+        height="220"
+        :src="restaurant.image"
+      />
+      <v-card-title class="text-h5">
+        {{ restaurant.name }}
+      </v-card-title>
       <v-card-subtitle class="d-flex align-center">
-        <v-icon class="me-1" size="small">mdi-star</v-icon>
+        <v-icon
+          class="me-1"
+          size="small"
+        >
+          mdi-star
+        </v-icon>
         {{ (restaurant.rating || 0).toFixed(1) }}
         <span class="mx-2">•</span>
         {{ restaurant.eta }}
@@ -17,21 +32,49 @@
     </v-card>
 
     <div v-else>
-      <v-alert type="warning" variant="tonal">Ce restaurant n'existe pas.</v-alert>
+      <v-alert
+        type="warning"
+        variant="tonal"
+      >
+        Ce restaurant n'existe pas.
+      </v-alert>
     </div>
 
     <v-row v-if="restaurant">
-      <v-col v-for="p in products" :key="p._id" cols="12" lg="3" md="4" sm="6">
+      <v-col
+        v-for="p in products"
+        :key="p._id"
+        cols="12"
+        lg="3"
+        md="4"
+        sm="6"
+      >
         <v-card class="h-100 d-flex flex-column">
-          <v-img :alt="p.name" cover height="160" :src="p.image" />
-          <v-card-title class="py-2">{{ p.name }}</v-card-title>
+          <v-img
+            :alt="p.name"
+            cover
+            height="160"
+            :src="p.image"
+          />
+          <v-card-title class="py-2">
+            {{ p.name }}
+          </v-card-title>
           <v-card-text class="flex-grow-1">
-            <div class="text-body-2 mb-2">{{ p.description }}</div>
-            <div class="text-subtitle-2 font-weight-medium">{{ formatPrice(p.price) }}</div>
+            <div class="text-body-2 mb-2">
+              {{ p.description }}
+            </div>
+            <div class="text-subtitle-2 font-weight-medium">
+              {{ formatPrice(p.price) }}
+            </div>
           </v-card-text>
           <v-card-actions>
-            <v-btn color="primary" @click="addToCart(p)">
-              <v-icon start>mdi-cart-plus</v-icon>
+            <v-btn
+              color="primary"
+              @click="addToCart(p)"
+            >
+              <v-icon start>
+                mdi-cart-plus
+              </v-icon>
               Ajouter
             </v-btn>
           </v-card-actions>
