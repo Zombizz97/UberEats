@@ -12,9 +12,9 @@ export async function register (req, res) {
     if (exists) {
       return res.status(400).json({ message: 'Email already used' })
     }
-    const hashed = await bcrypt.hash(password, 10)
-    const user = await User.create({ email, username, password: hashed })
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
+    const hashed = await bcrypt.hash(password, 10),
+     user = await User.create({ email, username, password: hashed }),
+     token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
     res.status(201).json({ token, user: { id: user._id, email: user.email, username: user.username, avatar: user.avatar } })
   } catch (error) {
     res.status(500).json({ message: error.message })

@@ -23,11 +23,11 @@ async function main () {
       eta: r.eta,
       featured: r.featured || false,
     })),
-  )
+  ),
 
-  const byExtId = new Map(restDocs.map(d => [d.extId, d]))
-  const map = productsData.productsByRestaurant || {}
-  const productDocs = []
+   byExtId = new Map(restDocs.map(d => [d.extId, d])),
+   map = productsData.productsByRestaurant || {},
+   productDocs = []
   for (const [restExtId, arr] of Object.entries(map)) {
     const rest = byExtId.get(restExtId)
     if (!rest) {

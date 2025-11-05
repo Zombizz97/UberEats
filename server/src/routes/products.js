@@ -6,9 +6,9 @@ const router = Router()
 // GET /api/products?restaurantId=...
 router.get('/', async (req, res, next) => {
   try {
-    const { restaurantId } = req.query
-    const query = restaurantId ? { restaurant: restaurantId } : {}
-    const docs = await Product.find(element => query(element)).lean()
+    const { restaurantId } = req.query,
+     query = restaurantId ? { restaurant: restaurantId } : {},
+     docs = await Product.find(element => query(element)).lean()
     res.json(docs)
   } catch (error) {
     next(error)

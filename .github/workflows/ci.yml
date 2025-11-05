@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint (ESLint front + back)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18 and enable npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          cd server
+          npm ci || npm install
+
+      - name: Install frontend dependencies
+        run: |
+          cd client
+          npm ci || npm install
+
+      - name: Lint backend
+        working-directory: server
+        run: npm run lint
+
+      - name: Lint frontend
+        working-directory: client
+        run: npm run lint
+
+  tests-backend:
+    name: Tests Backend
+    needs: lint
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'" --health-interval=10s --health-timeout=5s --health-retries=5
+    env:
+      NODE_ENV: test
+      MONGODB_URI: mongodb://localhost:27017/ubereats_test
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18 and enable npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          cd server
+          npm ci || npm install
+
+      - name: Wait for MongoDB to be ready
+        run: |
+          for i in {1..30}; do
+            if nc -z localhost 27017; then
+              echo "MongoDB is up" && break
+            fi
+            echo "Waiting for MongoDB... ($i)";
+            sleep 1;
+          done
+
+      - name: Run backend tests
+        working-directory: server
+        run: npm test
+
+  tests-frontend:
+    name: Tests Frontend
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18 and enable npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd client
+          npm ci || npm install
+
+      - name: Run frontend tests
+        working-directory: client
+        run: npm test
+
+  build-frontend:
+    name: Build Frontend
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18 and enable npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd client
+          npm ci || npm install
+
+      - name: Build frontend (vite)
+        working-directory: client
+        run: npm run build
+
