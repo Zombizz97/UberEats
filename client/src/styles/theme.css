@@ -1,0 +1,15 @@
+html, body, #app { height: 100%; }
+body {
+    margin: 0;
+    background-color: rgb(var(--v-theme-background));
+    color: rgb(var(--v-theme-on-background));
+}
+.v-application {
+    background-color: rgb(var(--v-theme-background)) !important;
+    color: rgb(var(--v-theme-on-background)) !important;
+}
+
+:root {
+    --radius-md: 12px;
+}
+.v-card { border-radius: var(--radius-md); }

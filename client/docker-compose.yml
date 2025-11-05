@@ -1,0 +1,37 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vuetify-project-web:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: vuetify-project-api:latest
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb+srv://db_user:VnCqQsUQ2ApFL39s@ubereats.eklysgv.mongodb.net/
+      - JWT_SECRET=${JWT_SECRET:-changeme}
+    depends_on:
+      - mongo
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
