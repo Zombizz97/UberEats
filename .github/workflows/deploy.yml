@@ -78,11 +78,10 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Deploy to Railway
-        run: railway up --service backend --project $RAILWAY_PROJECT_TOKEN
+      - name: Deploy backend
+        run: railway up --service backend --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_TOKEN: ${{ secrets.RAILWAY_PROJECT_TOKEN }}
 
   post_deploy_tests:
     name: Post-deploy Health Check
