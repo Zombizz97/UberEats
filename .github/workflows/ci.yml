@@ -51,10 +51,10 @@ jobs:
         ports:
           - 27017:27017
         options: >-
-          --health-cmd "mongo --eval 'db.adminCommand(\"ping\")'" --health-interval=10s --health-timeout=5s --health-retries=5
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'" --health-interval=10s --health-timeout=5s --health-retries=5
     env:
       NODE_ENV: test
-      MONGODB_URI: mongodb://localhost:27017/ubereats_test
+      MONGODB_URI: mongodb://mongodb:27017/ubereats_test
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
     steps:
       - name: Checkout
@@ -76,10 +76,12 @@ jobs:
         run: |
           for i in {1..30}; do
             if nc -z localhost 27017; then
-              echo "MongoDB is up" && break
+              if mongo --eval 'db.runCommand({ ping: 1 })' > /dev/null 2>&1; then
+                echo "MongoDB is up" && break
+              fi
             fi
             echo "Waiting for MongoDB... ($i)";
-            sleep 1;
+            sleep 2;
           done
 
       - name: Run backend tests
