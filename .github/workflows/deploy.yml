@@ -1,0 +1,160 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+envs:
+  # Valeurs par défaut sûres; remplacées via secrets au moment du build/deploy
+  # (Note: 'envs' au niveau racine n'est pas supporté, on fixe au niveau des jobs/steps)
+
+jobs:
+  build:
+    name: Build frontend + prepare backend
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22 and enable npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm ci || npm install
+
+      - name: Build frontend (vite, production)
+        working-directory: client
+        env:
+          VITE_API_URL: ${{ secrets.PROD_API_URL }}
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: client/dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci || npm install
+
+      - name: Prepare backend .env.production
+        run: |
+          mkdir -p server
+          {
+            echo "NODE_ENV=production";
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET_PROD }}";
+            # Optionnel: Décommentez si vous avez un secret PROD_MONGODB_URI
+            if [ -n "${{ secrets.PROD_MONGODB_URI }}" ]; then echo "MONGODB_URI=${{ secrets.PROD_MONGODB_URI }}"; fi
+          } > server/.env.production
+
+      - name: Upload backend env artifact (for deploy job)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-env
+          path: server/.env.production
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-backend:
+    name: Deploy Backend (Heroku)
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download backend env artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-env
+          path: server
+
+      - name: Verify env file
+        run: |
+          test -s server/.env.production || (echo "Missing server/.env.production" && exit 1)
+
+      - name: Deploy to Heroku (Docker)
+        if: ${{ secrets.HEROKU_API_KEY != '' && secrets.HEROKU_APP_NAME_SERVER != '' && secrets.HEROKU_EMAIL != '' }}
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME_SERVER }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          appdir: server
+          usedocker: true
+          docker_heroku_process_type: web
+          env_file: server/.env.production
+
+  deploy-frontend:
+    name: Deploy Frontend (Netlify)
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+    steps:
+      - name: Download frontend build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Deploy to Netlify
+        if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != '' }}
+        uses: netlify/actions/cli@v3.5.0
+        with:
+          args: deploy --dir=frontend-dist --prod --message "CI deploy ${{ github.sha }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  notify:
+    name: Notify Deploy Result
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+    environment:
+      name: production
+    steps:
+      - name: Deployment summary
+        uses: actions/github-script@v7
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const needs = JSON.parse(process.env.NEEDS_JSON || '{}');
+            const results = Object.fromEntries(Object.entries(needs).map(([k,v]) => [k, v && v.result]));
+            const failed = Object.entries(results).filter(([k,v]) => v === 'failure').map(([k]) => k);
+            const success = failed.length === 0;
+            const title = success ? '✅ Déploiement réussi' : '❌ Déploiement échoué';
+            const msg = `${title} - Branche: ${process.env.BRANCH}, Commit: ${process.env.SHA}`;
+            if (!success) core.error(msg); else core.notice(msg);
+            let out = `# ${title}\n\n- Branche: ${process.env.BRANCH}\n- Commit: ${process.env.SHA}\n`;
+            out += `\n## Résultats des jobs\n` + Object.entries(results).map(([k,v]) => `- ${k}: ${v}`).join('\n');
+            if (failed.length) out += `\n\n## Jobs en échec\n` + failed.map(k => `- ${k}`).join('\n');
+            await core.summary.addRaw(out).write();
+
