@@ -70,6 +70,8 @@ jobs:
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-latest
+    env:
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     needs: [ build_and_prepare ]
     steps:
       - name: Checkout
@@ -77,14 +79,6 @@ jobs:
 
       - name: Install Railway CLI
         run: npm i -g @railway/cli
-
-      - name: Railway login
-        env:
-          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway login
-
-      - name: Link project
-        run: railway link --project 08c1ddf4-a38f-422c-ae1b-208611862e39 --environment production --service UberEats
 
       - name: Deploy
         run: railway up --service UberEats --detach
