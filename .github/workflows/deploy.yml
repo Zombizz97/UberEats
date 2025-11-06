@@ -82,7 +82,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway up --service backend --detach
+          railway up --service UberEats --detach
   
 
   post_deploy_tests:
