@@ -3,6 +3,12 @@ name: Deploy
 on:
   push:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version ou commit à déployer'
+        required: false
+        default: 'latest'
 
 jobs:
   build_and_prepare:
@@ -13,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version || github.sha }}
 
       - name: Setup Node.js 22 with npm cache
         uses: actions/setup-node@v4
@@ -31,7 +39,6 @@ jobs:
         working-directory: client
         env:
           NODE_ENV: production
-          VITE_API_URL: ${{ secrets.PROD_API_URL }}
         run: npm run build
 
       - name: Install backend dependencies
@@ -50,41 +57,120 @@ jobs:
             if [ -n "${PROD_MONGODB_URI}" ]; then echo "MONGODB_URI=${PROD_MONGODB_URI}"; fi
           } > server/.env.production
 
-      - name: Exécuter les migrations MongoDB (versionnées & traçables)
+      - name: Run database migrations
         working-directory: server
         env:
           NODE_ENV: production
           MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
         run: |
-          set -euo pipefail
-          if [ -z "${MONGODB_URI:-}" ]; then
-            echo "Secret PROD_MONGODB_URI manquant."
-            exit 1
-          fi
-          # Suppose un fichier de config présent: server/migrate-mongo-config.js
-          # et des migrations versionnées dans server/migrations.
-          npx --yes migrate-mongo@^11 up
+          echo "Running MongoDB migrations..."
+          npm run migrate  # ex: script: "migrate": "node ./migrations/run.js"
+          echo "Migrations completed."
 
-  notify:
-    name: Notify Build/Prepare Result
+  deploy:
+    name: Deploy to production
     runs-on: ubuntu-latest
     needs: [build_and_prepare]
+    if: ${{ needs.build_and_prepare.result == 'success' }}
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy app (example with SSH)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "${SSH_PRIVATE_KEY}" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -i private_key.pem ubuntu@${SERVER_IP} << 'EOF'
+            cd /var/www/app
+            pm2 stop all || true
+            git pull origin master
+            npm ci --omit=dev
+            npm run build
+            pm2 start server.js --name app
+          EOF
+
+  post_deploy_tests:
+    name: Post-deploy Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    environment:
+      name: production
+    steps:
+      - name: Health check main API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.PROD_API_URL }}/health")
+          if [ "$STATUS" -ne 200 ]; then
+            echo "❌ Health check failed with status $STATUS"
+            exit 1
+          fi
+          echo "✅ API health check passed."
+
+      - name: Check critical endpoints
+        run: |
+          ENDPOINTS=(
+            "/api/v1/users"
+            "/api/v1/orders"
+          )
+          for path in "${ENDPOINTS[@]}"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.PROD_API_URL }}$path")
+            if [ "$CODE" -ne 200 ]; then
+              echo "❌ Endpoint $path failed (HTTP $CODE)"
+              exit 1
+            fi
+          done
+          echo "✅ All endpoints healthy."
+
+  rollback:
+    name: Rollback on failure
+    runs-on: ubuntu-latest
+    needs: [post_deploy_tests]
+    if: ${{ needs.post_deploy_tests.result != 'success' }}
+    environment:
+      name: production
+    steps:
+      - name: Rollback to previous version
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          echo "${SSH_PRIVATE_KEY}" > private_key.pem
+          chmod 600 private_key.pem
+          ssh -i private_key.pem ubuntu@${SERVER_IP} << 'EOF'
+            cd /var/www/app
+            echo "Rolling back to previous version..."
+            git reset --hard HEAD~1
+            npm ci --omit=dev
+            npm run build
+            pm2 restart app
+          EOF
+
+  notify:
+    name: Notifications
+    runs-on: ubuntu-latest
+    needs: [post_deploy_tests, rollback]
     if: always()
     environment:
       name: production
     steps:
-      - name: Summary and annotation
-        uses: actions/github-script@v7
-        env:
-          BRANCH: ${{ github.ref_name }}
-          SHA: ${{ github.sha }}
-          RESULT: ${{ needs.build_and_prepare.result }}
+      - name: Send notification email
+        uses: dawidd6/action-send-mail@v3
         with:
-          script: |
-            const result = process.env.RESULT;
-            const ok = result === 'success';
-            const title = ok ? '✅ Build & Prepare réussi' : '❌ Build & Prepare échoué';
-            const msg = `${title} - Branche: ${process.env.BRANCH}, Commit: ${process.env.SHA}`;
-            if (!ok) core.error(msg); else core.notice(msg);
-            let out = `# ${title}\n\n- Branche: ${process.env.BRANCH}\n- Commit: ${process.env.SHA}\n- Statut: ${result}\n`;
-            await core.summary.addRaw(out).write();
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: 465
+          username: ${{ secrets.SMTP_USER }}
+          password: ${{ secrets.SMTP_PASS }}
+          subject: |
+            🚀 Déploiement ${{ needs.post_deploy_tests.result == 'success' && 'réussi' || 'échoué' }}
+          to: "devops@votredomaine.com"
+          from: "GitHub Actions <no-reply@votredomaine.com>"
+          body: |
+            Environnement: production
+            Résultat: ${{ needs.post_deploy_tests.result }}
+            Branche: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            $(if [ "${{ needs.post_deploy_tests.result }}" == "failure" ]; then echo "Rollback effectué."; fi)
