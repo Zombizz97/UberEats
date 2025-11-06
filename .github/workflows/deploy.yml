@@ -78,12 +78,16 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Deploy to Railway
-        working-directory: ${{ github.workspace }}
+      - name: Railway login
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          railway up --service UberEats --detach
+        run: railway login
+
+      - name: Link project
+        run: railway link --project 08c1ddf4-a38f-422c-ae1b-208611862e39 --environment production --service UberEats
+
+      - name: Deploy
+        run: railway up --service UberEats --detach
   
 
   post_deploy_tests:
