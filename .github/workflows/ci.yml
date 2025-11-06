@@ -135,7 +135,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd client
-          npm ci || npm install --only=dev
+          npm install --include=dev
 
       - name: Build frontend (vite)
         working-directory: client
