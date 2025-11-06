@@ -27,14 +27,6 @@ app.use('/api/restaurants', restaurantsRouter)
 app.use('/api/products', productsRouter)
 app.use('/api/auth', authRouter)
 
-// Frontend (serve Vite build)
-// eslint-disable-next-line no-undef
-app.use(express.static(path.join(__dirname, '../client/dist')))
-// Redirect all routes to index.html
-app.get('*', (req, res) => {
-// eslint-disable-next-line no-undef
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'))
-})
 // eslint-disable-next-line one-var,no-undef,no-magic-numbers
 const port = process.env.PORT || 4000
 // eslint-disable-next-line no-inline-comments
