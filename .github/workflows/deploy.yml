@@ -70,25 +70,13 @@ jobs:
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
     env:
+      SVC_ID: 8a817b5a-e3ef-4f6d-b20c-dbe556eacea3
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-#    needs: [ build_and_prepare ]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm i -g @railway/cli
-
-      - name: Link project
-        run: railway link --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: Deploy UberEats service
-        run: railway up --service UberEats --environment production --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - uses: actions/checkout@v3
+      - run: railway up --service=${{ env.SVC_ID }}
 
 
   post_deploy_tests:
