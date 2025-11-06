@@ -1,11 +1,13 @@
 # UberEats Clone
 
-[![CI Status](https://github.com/${{GITHUB_REPOSITORY}}/actions/workflows/ci.yml/badge.svg)](https://github.com/${{GITHUB_REPOSITORY}}/actions/workflows/ci.yml)
+[![CI Status](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
 
 Ce projet contient un client Vue 3 + Vite et une API Node/Express.
 
 - Dossier `client/`: frontend (Vite + Vue 3 + Vuetify)
 - Dossier `server/`: backend (Express + Mongoose)
+
+Remplacez OWNER/REPO par l'organisation et le nom de votre dépôt GitHub.
 
 ## Développement
 
@@ -24,4 +26,3 @@ En cas d'échec, un résumé est publié dans l'onglet Summary du job "Notify Fa
 - la branche
 - le commit
 - la liste des jobs en échec et leur statut
-
