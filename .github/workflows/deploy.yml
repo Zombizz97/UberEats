@@ -2,19 +2,11 @@ name: Deploy
 
 on:
   push:
-    branches: [master]
-
-permissions:
-  contents: read
-  deployments: write
-
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
+    branches: [main]
 
 jobs:
-  build:
-    name: Build frontend + prepare backend
+  build_and_prepare:
+    name: Build frontend (prod) & prepare backend
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -22,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 22 and enable npm cache
+      - name: Setup Node.js 22 with npm cache
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,26 +27,18 @@ jobs:
         working-directory: client
         run: npm ci || npm install
 
-      - name: Build frontend (vite, production)
+      - name: Build frontend (Vite, production)
         working-directory: client
         env:
-          VITE_API_URL: ${{ secrets.PROD_API_URL }}
           NODE_ENV: production
+          VITE_API_URL: ${{ secrets.PROD_API_URL }}
         run: npm run build
-
-      - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: client/dist
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Install backend dependencies
         working-directory: server
         run: npm ci || npm install
 
-      - name: Prepare backend .env.production
+      - name: Prepare backend env (production)
         env:
           JWT_SECRET_PROD: ${{ secrets.JWT_SECRET_PROD }}
           PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
@@ -66,106 +50,26 @@ jobs:
             if [ -n "${PROD_MONGODB_URI}" ]; then echo "MONGODB_URI=${PROD_MONGODB_URI}"; fi
           } > server/.env.production
 
-      - name: Upload backend env artifact (for deploy job)
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-env
-          path: server/.env.production
-          if-no-files-found: error
-          retention-days: 7
-
-  deploy-backend:
-    name: Deploy Backend (Heroku)
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: production
-    env:
-      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      HEROKU_APP_NAME_SERVER: ${{ secrets.HEROKU_APP_NAME_SERVER }}
-      HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download backend env artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-env
-          path: server
-
-      - name: Verify env file
-        run: |
-          test -s server/.env.production || (echo "Missing server/.env.production" && exit 1)
-
-      - name: Deploy to Heroku (Docker)
-        if: ${{ env.HEROKU_API_KEY != '' && env.HEROKU_APP_NAME_SERVER != '' && env.HEROKU_EMAIL != '' }}
-        uses: akhileshns/heroku-deploy@v3.12.12
-        with:
-          heroku_api_key: ${{ env.HEROKU_API_KEY }}
-          heroku_app_name: ${{ env.HEROKU_APP_NAME_SERVER }}
-          heroku_email: ${{ env.HEROKU_EMAIL }}
-          appdir: server
-          usedocker: true
-          docker_heroku_process_type: web
-          env_file: server/.env.production
-
-  deploy-frontend:
-    name: Deploy Frontend (Netlify)
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: production
-    env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-    steps:
-      - name: Download frontend build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend-dist
-
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy to Netlify via CLI
-        run: |
-          if [ -z "${NETLIFY_AUTH_TOKEN}" ] || [ -z "${NETLIFY_SITE_ID}" ]; then
-            echo "Netlify secrets missing, skipping frontend deploy";
-            exit 0;
-          fi
-          netlify deploy --dir=frontend-dist --prod --message "CI deploy ${GITHUB_SHA}"
-
   notify:
-    name: Notify Deploy Result
+    name: Notify Build/Prepare Result
     runs-on: ubuntu-latest
-    needs: [deploy-backend, deploy-frontend]
+    needs: [build_and_prepare]
     if: always()
     environment:
       name: production
     steps:
-      - name: Deployment summary
+      - name: Summary and annotation
         uses: actions/github-script@v7
         env:
           BRANCH: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
-          NEEDS_JSON: ${{ toJSON(needs) }}
+          RESULT: ${{ needs.build_and_prepare.result }}
         with:
           script: |
-            const needs = JSON.parse(process.env.NEEDS_JSON || '{}');
-            const results = Object.fromEntries(Object.entries(needs).map(([k,v]) => [k, v && v.result]));
-            const failed = Object.entries(results).filter(([k,v]) => v === 'failure').map(([k]) => k);
-            const success = failed.length === 0;
-            const title = success ? '✅ Déploiement réussi' : '❌ Déploiement échoué';
+            const result = process.env.RESULT;
+            const ok = result === 'success';
+            const title = ok ? '✅ Build & Prepare réussi' : '❌ Build & Prepare échoué';
             const msg = `${title} - Branche: ${process.env.BRANCH}, Commit: ${process.env.SHA}`;
-            if (!success) core.error(msg); else core.notice(msg);
-            let out = `# ${title}\n\n- Branche: ${process.env.BRANCH}\n- Commit: ${process.env.SHA}\n`;
-            out += `\n## Résultats des jobs\n` + Object.entries(results).map(([k,v]) => `- ${k}: ${v}`).join('\n');
-            if (failed.length) out += `\n\n## Jobs en échec\n` + failed.map(k => `- ${k}`).join('\n');
+            if (!ok) core.error(msg); else core.notice(msg);
+            let out = `# ${title}\n\n- Branche: ${process.env.BRANCH}\n- Commit: ${process.env.SHA}\n- Statut: ${result}\n`;
             await core.summary.addRaw(out).write();
