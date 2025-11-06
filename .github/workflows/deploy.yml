@@ -11,68 +11,68 @@ on:
         default: 'latest'
 
 jobs:
-  build_and_prepare:
-    name: Build frontend (prod) & prepare backend
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.version || github.sha }}
-
-      - name: Setup Node.js 22 with npm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: |
-            client/package-lock.json
-            server/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: client
-        run: npm ci || npm install
-
-      - name: Build frontend (Vite, production)
-        working-directory: client
-        env:
-          NODE_ENV: production
-        run: npm run build
-
-      - name: Install backend dependencies
-        working-directory: server
-        run: npm ci || npm install
-
-      - name: Prepare backend env (production)
-        env:
-          JWT_SECRET_PROD: ${{ secrets.JWT_SECRET_PROD }}
-          PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
-        run: |
-          mkdir -p server
-          {
-            echo "NODE_ENV=production";
-            echo "JWT_SECRET=${JWT_SECRET_PROD}";
-            if [ -n "${PROD_MONGODB_URI}" ]; then echo "MONGODB_URI=${PROD_MONGODB_URI}"; fi
-          } > server/.env.production
-
-      - name: Run database migrations
-        working-directory: server
-        env:
-          NODE_ENV: production
-          MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
-        run: |
-          echo "Running MongoDB migrations..."
-          npm run migrate  # ex: script: "migrate": "node ./migrations/run.js"
-          echo "Migrations completed."
+#  build_and_prepare:
+#    name: Build frontend (prod) & prepare backend
+#    runs-on: ubuntu-latest
+#    environment:
+#      name: production
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#        with:
+#          ref: ${{ github.event.inputs.version || github.sha }}
+#
+#      - name: Setup Node.js 22 with npm cache
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: '22'
+#          cache: 'npm'
+#          cache-dependency-path: |
+#            client/package-lock.json
+#            server/package-lock.json
+#
+#      - name: Install frontend dependencies
+#        working-directory: client
+#        run: npm ci || npm install
+#
+#      - name: Build frontend (Vite, production)
+#        working-directory: client
+#        env:
+#          NODE_ENV: production
+#        run: npm run build
+#
+#      - name: Install backend dependencies
+#        working-directory: server
+#        run: npm ci || npm install
+#
+#      - name: Prepare backend env (production)
+#        env:
+#          JWT_SECRET_PROD: ${{ secrets.JWT_SECRET_PROD }}
+#          PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+#        run: |
+#          mkdir -p server
+#          {
+#            echo "NODE_ENV=production";
+#            echo "JWT_SECRET=${JWT_SECRET_PROD}";
+#            if [ -n "${PROD_MONGODB_URI}" ]; then echo "MONGODB_URI=${PROD_MONGODB_URI}"; fi
+#          } > server/.env.production
+#
+#      - name: Run database migrations
+#        working-directory: server
+#        env:
+#          NODE_ENV: production
+#          MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+#        run: |
+#          echo "Running MongoDB migrations..."
+#          npm run migrate  # ex: script: "migrate": "node ./migrations/run.js"
+#          echo "Migrations completed."
 
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-latest
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-    needs: [ build_and_prepare ]
+#    needs: [ build_and_prepare ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,10 +80,10 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Link project
-        run: railway link --project 08c1ddf4-a38f-422c-ae1b-208611862e39 --environment production --service UberEats
-
-      - name: Deploy
+      - name: Deploy UberEats service
+        working-directory: ${{ github.workspace }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service UberEats --detach
   
 
