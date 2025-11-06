@@ -1,0 +1,74 @@
+name: Staging
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  build_and_prepare:
+    name: Build frontend (prod) & prepare backend
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 with npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm ci || npm install
+
+      - name: Build frontend (Vite, production)
+        working-directory: client
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci || npm install
+
+      - name: Prepare backend env (production)
+        env:
+          JWT_SECRET_STAGING: ${{ secrets.JWT_SECRET_STAGING }}
+          STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+        run: |
+          mkdir -p server
+          {
+            echo "NODE_ENV=production";
+            echo "JWT_SECRET=${JWT_SECRET_STAGING}";
+            if [ -n "${STAGING_MONGODB_URI}" ]; then echo "MONGODB_URI=${STAGING_MONGODB_URI}"; fi
+          } > server/.env.production
+
+  notify:
+    name: Notify Build/Prepare Result
+    runs-on: ubuntu-latest
+    needs: [build_and_prepare]
+    if: always()
+    environment:
+      name: production
+    steps:
+      - name: Summary and annotation
+        uses: actions/github-script@v7
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          RESULT: ${{ needs.build_and_prepare.result }}
+        with:
+          script: |
+            const result = process.env.RESULT;
+            const ok = result === 'success';
+            const title = ok ? '✅ Build & Prepare réussi' : '❌ Build & Prepare échoué';
+            const msg = `${title} - Branche: ${process.env.BRANCH}, Commit: ${process.env.SHA}`;
+            if (!ok) core.error(msg); else core.notice(msg);
+            let out = `# ${title}\n\n- Branche: ${process.env.BRANCH}\n- Commit: ${process.env.SHA}\n- Statut: ${result}\n`;
+            await core.summary.addRaw(out).write();
