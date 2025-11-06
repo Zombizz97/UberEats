@@ -12,10 +12,6 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-envs:
-  # Valeurs par défaut sûres; remplacées via secrets au moment du build/deploy
-  # (Note: 'envs' au niveau racine n'est pas supporté, on fixe au niveau des jobs/steps)
-
 jobs:
   build:
     name: Build frontend + prepare backend
@@ -59,13 +55,15 @@ jobs:
         run: npm ci || npm install
 
       - name: Prepare backend .env.production
+        env:
+          JWT_SECRET_PROD: ${{ secrets.JWT_SECRET_PROD }}
+          PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
         run: |
           mkdir -p server
           {
             echo "NODE_ENV=production";
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET_PROD }}";
-            # Optionnel: Décommentez si vous avez un secret PROD_MONGODB_URI
-            if [ -n "${{ secrets.PROD_MONGODB_URI }}" ]; then echo "MONGODB_URI=${{ secrets.PROD_MONGODB_URI }}"; fi
+            echo "JWT_SECRET=${JWT_SECRET_PROD}";
+            if [ -n "${PROD_MONGODB_URI}" ]; then echo "MONGODB_URI=${PROD_MONGODB_URI}"; fi
           } > server/.env.production
 
       - name: Upload backend env artifact (for deploy job)
@@ -97,12 +95,16 @@ jobs:
           test -s server/.env.production || (echo "Missing server/.env.production" && exit 1)
 
       - name: Deploy to Heroku (Docker)
-        if: ${{ secrets.HEROKU_API_KEY != '' && secrets.HEROKU_APP_NAME_SERVER != '' && secrets.HEROKU_EMAIL != '' }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME_SERVER: ${{ secrets.HEROKU_APP_NAME_SERVER }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+        if: ${{ env.HEROKU_API_KEY != '' && env.HEROKU_APP_NAME_SERVER != '' && env.HEROKU_EMAIL != '' }}
         uses: akhileshns/heroku-deploy@v3.12.12
         with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_APP_NAME_SERVER }}
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          heroku_api_key: ${{ env.HEROKU_API_KEY }}
+          heroku_app_name: ${{ env.HEROKU_APP_NAME_SERVER }}
+          heroku_email: ${{ env.HEROKU_EMAIL }}
           appdir: server
           usedocker: true
           docker_heroku_process_type: web
@@ -122,7 +124,10 @@ jobs:
           path: frontend-dist
 
       - name: Deploy to Netlify
-        if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != '' }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        if: ${{ env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != '' }}
         uses: netlify/actions/cli@v3.5.0
         with:
           args: deploy --dir=frontend-dist --prod --message "CI deploy ${{ github.sha }}"
@@ -157,4 +162,3 @@ jobs:
             out += `\n## Résultats des jobs\n` + Object.entries(results).map(([k,v]) => `- ${k}: ${v}`).join('\n');
             if (failed.length) out += `\n\n## Jobs en échec\n` + failed.map(k => `- ${k}`).join('\n');
             await core.summary.addRaw(out).write();
-
