@@ -50,6 +50,66 @@ jobs:
             if [ -n "${PROD_MONGODB_URI}" ]; then echo "MONGODB_URI=${PROD_MONGODB_URI}"; fi
           } > server/.env.production
 
+  post_deploy_health_check:
+    name: Post-deploy health checks
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Vérifier endpoints critiques
+        env:
+          BASE_URL: ${{ secrets.PROD_API_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BASE_URL:-}" ]; then
+            echo "Secret PROD_API_URL manquant."
+            exit 1
+          fi
+
+          endpoints=(
+            "/health"
+          )
+
+          fail=0
+          for path in "${endpoints[@]}"; do
+            url="${BASE_URL%/}${path}"
+            echo "Health check: ${url}"
+            ok=0
+            for i in {1..10}; do
+              status=$(curl -s -o /dev/null -w "%{http_code}" "${url}" || true)
+              if [ "${status}" = "200" ]; then
+                echo "OK ${url} -> 200"
+                ok=1
+                break
+              fi
+              echo "Tentative ${i}/10 échouée (statut=${status}). Retry dans 3s..."
+              sleep 3
+            done
+            if [ "${ok}" -ne 1 ]; then
+              echo "Endpoint non sain: ${url} (dernier statut=${status})"
+              fail=1
+            fi
+          done
+
+          if [ "${fail}" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Résumé health checks
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          API: ${{ secrets.PROD_API_URL }}
+        with:
+          script: |
+            const api = process.env.API || 'n/a';
+            const status = core.getInput('status') || 'see job log';
+            await core.summary
+              .addRaw(`# Health checks\n\n`)
+              .addRaw(`- API: ${api}\n`)
+              .addRaw(`- Résultat: ${github.job}\n`)
+              .write();
+
   notify:
     name: Notify Build/Prepare Result
     runs-on: ubuntu-latest
