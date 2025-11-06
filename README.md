@@ -1,6 +1,6 @@
 # UberEats Clone
 
-[![CI Status](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI Status](https://github.com/Zombizz97/UberEats/actions/workflows/ci.yml/badge.svg)](https://github.com/Zombizz97/UberEats/actions/workflows/ci.yml)
 
 Ce projet contient un client Vue 3 + Vite et une API Node/Express.
 
