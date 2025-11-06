@@ -80,6 +80,10 @@ jobs:
     needs: build
     environment:
       name: production
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_APP_NAME_SERVER: ${{ secrets.HEROKU_APP_NAME_SERVER }}
+      HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,10 +99,6 @@ jobs:
           test -s server/.env.production || (echo "Missing server/.env.production" && exit 1)
 
       - name: Deploy to Heroku (Docker)
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_APP_NAME_SERVER: ${{ secrets.HEROKU_APP_NAME_SERVER }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         if: ${{ env.HEROKU_API_KEY != '' && env.HEROKU_APP_NAME_SERVER != '' && env.HEROKU_EMAIL != '' }}
         uses: akhileshns/heroku-deploy@v3.12.12
         with:
@@ -116,6 +116,9 @@ jobs:
     needs: build
     environment:
       name: production
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     steps:
       - name: Download frontend build artifact
         uses: actions/download-artifact@v4
@@ -123,17 +126,21 @@ jobs:
           name: frontend-dist
           path: frontend-dist
 
-      - name: Deploy to Netlify
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        if: ${{ env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != '' }}
-        uses: netlify/actions/cli@v3.5.0
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
         with:
-          args: deploy --dir=frontend-dist --prod --message "CI deploy ${{ github.sha }}"
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          node-version: '22'
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy to Netlify via CLI
+        run: |
+          if [ -z "${NETLIFY_AUTH_TOKEN}" ] || [ -z "${NETLIFY_SITE_ID}" ]; then
+            echo "Netlify secrets missing, skipping frontend deploy";
+            exit 0;
+          fi
+          netlify deploy --dir=frontend-dist --prod --message "CI deploy ${GITHUB_SHA}"
 
   notify:
     name: Notify Deploy Result
